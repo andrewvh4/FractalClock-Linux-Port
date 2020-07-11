@@ -44,6 +44,14 @@ static const char* draw_clock_name[] = {
   "[C] Hide Clock",
   "[C] Draw Clock",
 };
+static const char* fullscreen_name[] = {
+  "[F11] Enter Fullscreen",
+  "[F11] Exit Fullscreen",
+};
+static const char* draw_text_name[] = {
+  "[Enter] Hide Text",
+  "[Enter] Show Text",
+};
 
 static std::vector<sf::Vertex> line_array;
 static std::vector<sf::Vertex> point_array;
@@ -62,6 +70,7 @@ static bool use_tick = false;
 static bool draw_branches = true;
 static bool draw_clock = true;
 static bool is_fullscreen = false;
+static bool draw_text = true;
 
 void FractalIterMS(sf::Vector2f pt, sf::Vector2f dir, int depth) {
   const sf::Color& col = color_scheme[depth];
@@ -132,31 +141,48 @@ int main(int argc, char *argv[]) {
   sf::Text clock_num;
   clock_num.setFont(font);
   clock_num.setFillColor(clock_face_color);
+  
   sf::Text clock_type_text;
   clock_type_text.setFont(font);
   clock_type_text.setFillColor(clock_face_color);
   clock_type_text.setCharacterSize(24);
   clock_type_text.setPosition(10, 10);
+  
   sf::Text realtime_text;
   realtime_text.setFont(font);
   realtime_text.setFillColor(clock_face_color);
   realtime_text.setCharacterSize(24);
   realtime_text.setPosition(10, 40);
+  
   sf::Text tick_text;
   tick_text.setFont(font);
   tick_text.setFillColor(clock_face_color);
   tick_text.setCharacterSize(24);
   tick_text.setPosition(10, 70);
+  
   sf::Text draw_branches_text;
   draw_branches_text.setFont(font);
   draw_branches_text.setFillColor(clock_face_color);
   draw_branches_text.setCharacterSize(24);
   draw_branches_text.setPosition(10, 100);
+  
   sf::Text draw_clock_text;
   draw_clock_text.setFont(font);
   draw_clock_text.setFillColor(clock_face_color);
   draw_clock_text.setCharacterSize(24);
   draw_clock_text.setPosition(10, 130);
+  
+  sf::Text fullscreen_text;
+  fullscreen_text.setFont(font);
+  fullscreen_text.setFillColor(clock_face_color);
+  fullscreen_text.setCharacterSize(24);
+  fullscreen_text.setPosition(10, 160);
+  
+  sf::Text draw_text_text;
+  draw_text_text.setFont(font);
+  draw_text_text.setFillColor(clock_face_color);
+  draw_text_text.setCharacterSize(24);
+  draw_text_text.setPosition(10, 190);
 
   //Create the window
   sf::VideoMode screenSize = sf::VideoMode(window_w_init, window_h_init, 24);
@@ -192,6 +218,8 @@ int main(int argc, char *argv[]) {
           draw_clock = !draw_clock;
         } else if (keycode == sf::Keyboard::F11) {
           toggle_fullscreen = true;
+        } else if (keycode == sf::Keyboard::Enter) {
+          draw_text = !draw_text;
         }
       } else if (event.type == sf::Event::Resized) {
         screenSize.width = event.size.width;
@@ -345,7 +373,8 @@ int main(int argc, char *argv[]) {
         window.draw(line_array.data() + line_array.size() - 2, 2, sf::PrimitiveType::Lines);
       }
     }
-
+    
+    if(draw_text){
     //Draw UI elements
     clock_type_text.setString(clock_type_name[clock_type]);
     window.draw(clock_type_text);
@@ -357,7 +386,11 @@ int main(int argc, char *argv[]) {
     window.draw(draw_branches_text);
     draw_clock_text.setString(draw_clock_name[draw_clock ? 1 : 0]);
     window.draw(draw_clock_text);
-
+    fullscreen_text.setString(fullscreen_name[is_fullscreen ? 1 : 0]);
+    window.draw(fullscreen_text);
+    draw_text_text.setString(draw_text_name[draw_text ? 1 : 0]);
+    window.draw(draw_text_text);
+    }
     //Flip the screen buffer
     window.display();
 
