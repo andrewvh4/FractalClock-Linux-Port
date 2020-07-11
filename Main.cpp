@@ -5,13 +5,21 @@
 #include <ctime>
 #include "HSV.h"
 #include "resource.h"
+#include <cmath>
+#include <math.h>
+#include <time.h>
 
-static const float PI = 3.14159265359f;
+static const float PI = 3.141592653589793238f;
 static const int max_iters = 16;
 static const int window_w_init = 700;
 static const int window_h_init = 700;
 static const sf::Color clock_face_color(255, 255, 255, 192);
 static const sf::Color bgnd_color(16, 16, 16);
+
+extern float __fmodf (float x, float y);
+
+extern float __get_current_time ();
+
 enum ClockType {
   MS, HMS, HM, NUM
 };
@@ -54,16 +62,6 @@ static bool use_tick = false;
 static bool draw_branches = true;
 static bool draw_clock = true;
 static bool is_fullscreen = false;
-
-struct Res {
-  Res(int id) {
-    HRSRC src = ::FindResource(NULL, MAKEINTRESOURCE(id), RT_RCDATA);
-    ptr = ::LockResource(::LoadResource(NULL, src));
-    size = (size_t)::SizeofResource(NULL, src);
-  }
-  void* ptr;
-  size_t size;
-};
 
 void FractalIterMS(sf::Vector2f pt, sf::Vector2f dir, int depth) {
   const sf::Color& col = color_scheme[depth];
@@ -128,8 +126,7 @@ int main(int argc, char *argv[]) {
 
   //Load the font
   sf::Font font;
-  Res font_res(IDR_FONT);
-  font.loadFromMemory(font_res.ptr, font_res.size);
+  font.loadFromFile("font.ttf");
 
   //Setup UI elements
   sf::Text clock_num;
@@ -212,30 +209,23 @@ int main(int argc, char *argv[]) {
     //Get the time
     float cur_time = 0.0f;
     if (use_realtime) {
-      FILETIME fileTime;
-      SYSTEMTIME systemTime;
-      SYSTEMTIME localTime;
-      GetSystemTimeAsFileTime(&fileTime);
-      FileTimeToSystemTime(&fileTime, &systemTime);
-      SystemTimeToTzSpecificLocalTime(NULL, &systemTime, &localTime);
-      cur_time = float(localTime.wMilliseconds) / 1000.0f;
-      cur_time += float(localTime.wSecond);
-      cur_time += float(localTime.wMinute) * 60.0f;
-      cur_time += float(localTime.wHour) * 3600.0f;
+        cur_time = __get_current_time();
     } else {
       cur_time = clock.getElapsedTime().asSeconds();
     }
+    //std::cout<<cur_time<<std::endl;
+    
     if (use_tick) {
       static const float a = 30.0f;
       static const float b = 14.0f;
-      const float x = std::fmodf(cur_time, 1.0f);
+      const float x = __fmodf(cur_time, 1.0f);
       const float y = 1.0f - std::cos(a*x)*std::exp(-b*x);
       cur_time = cur_time - x + y;
     }
 
-    const float seconds = std::fmodf(cur_time, 60.0f) * 2.0f * PI / 60.0f;
-    const float minutes = std::fmodf(cur_time, 3600.0f) * 2.0f * PI / 3600.0f;
-    const float hours = std::fmodf(cur_time, 43200.0f) * 2.0f * PI / 43200.0f;
+    const float seconds = __fmodf(cur_time, 60.0f) * 2.0f * PI / 60.0f;
+    const float minutes = __fmodf(cur_time, 3600.0f) * 2.0f * PI / 3600.0f;
+    const float hours = __fmodf(cur_time, 43200.0f) * 2.0f * PI / 43200.0f;
 
     //Update the clock
     const float ratio = std::max(std::max(ratioH, ratioM), ratioS);
@@ -266,7 +256,7 @@ int main(int argc, char *argv[]) {
     const float r3 = std::sin(cur_time * 0.003f)*0.5f + 0.5f;
     for (int i = 0; i < iters; ++i) {
       const float a = float(i) / float(iters - 1);
-      const float h = std::fmodf(r2 + 0.5f*a, 1.0f);
+      const float h = __fmodf(r2 + 0.5f*a, 1.0f);
       const float s = 0.5f + 0.5f * r3 - 0.5f*(1.0f - a);
       const float v = 0.3f + 0.5f * r1;
       if (i == 0) {
