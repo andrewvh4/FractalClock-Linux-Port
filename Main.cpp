@@ -10,9 +10,9 @@
 #include <time.h>
 
 static const float PI = 3.141592653589793238f;
-static const int max_iters = 16;
-static const int window_w_init = 700;
-static const int window_h_init = 700;
+static const int max_iters = 14;
+static const int window_w_init = 1920;
+static const int window_h_init = 1020;
 static const sf::Color clock_face_color(255, 255, 255, 192);
 static const sf::Color bgnd_color(16, 16, 16);
 
@@ -52,6 +52,10 @@ static const char* draw_text_name[] = {
   "[Enter] Hide Text",
   "[Enter] Show Text",
 };
+static const char* update_clock_name[] = {
+  "[Space] Update Clock"
+};
+
 
 static std::vector<sf::Vertex> line_array;
 static std::vector<sf::Vertex> point_array;
@@ -65,12 +69,15 @@ static sf::Color color_scheme[max_iters];
 static bool toggle_fullscreen = false;
 
 static ClockType clock_type = ClockType::HMS;
-static bool use_realtime = true;
+static bool use_realtime = false;
 static bool use_tick = false;
-static bool draw_branches = true;
+static bool draw_branches = false;
 static bool draw_clock = true;
 static bool is_fullscreen = false;
-static bool draw_text = true;
+static bool draw_text = false;
+static bool update_clock = true;
+
+static float time_delta = 0.0;
 
 void FractalIterMS(sf::Vector2f pt, sf::Vector2f dir, int depth) {
   const sf::Color& col = color_scheme[depth];
@@ -124,14 +131,14 @@ void FractalIterHM(sf::Vector2f pt, sf::Vector2f dir, int depth) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {  
   //GL settings
   sf::ContextSettings settings;
   settings.depthBits = 24;
   settings.stencilBits = 8;
   settings.antialiasingLevel = 4;
-  settings.majorVersion = 3;
-  settings.minorVersion = 0;
+  settings.majorVersion = 2;
+  settings.minorVersion = 1;
 
   //Load the font
   sf::Font font;
@@ -184,7 +191,13 @@ int main(int argc, char *argv[]) {
   draw_text_text.setCharacterSize(24);
   draw_text_text.setPosition(10, 190);
 
-  //Create the window
+  sf::Text update_clock_text;
+  update_clock_text.setFont(font);
+  update_clock_text.setFillColor(clock_face_color);
+  update_clock_text.setCharacterSize(24);
+  update_clock_text.setPosition(10, 220);
+
+
   sf::VideoMode screenSize = sf::VideoMode(window_w_init, window_h_init, 24);
   sf::RenderWindow window(screenSize, "Fractal Clock", sf::Style::Resize | sf::Style::Close, settings);
   window.setFramerateLimit(60);
@@ -220,11 +233,13 @@ int main(int argc, char *argv[]) {
           toggle_fullscreen = true;
         } else if (keycode == sf::Keyboard::Enter) {
           draw_text = !draw_text;
+        } else if (keycode == sf::Keyboard::Space) {
+          update_clock = true;
         }
       } else if (event.type == sf::Event::Resized) {
-        screenSize.width = event.size.width;
-        screenSize.height = event.size.height;
-        window.setView(sf::View(sf::FloatRect(0.0f, 0.0f, (float)screenSize.width, (float)screenSize.height)));
+        //screenSize.width = event.size.width;
+        //screenSize.height = event.size.height;
+        //window.setView(sf::View(sf::FloatRect(0.0f, 0.0f, (float)screenSize.width, (float)screenSize.height)));
       }
     }
 
@@ -234,14 +249,20 @@ int main(int argc, char *argv[]) {
       iters = max_iters - 3;
     }
 
+   // Get time delta
+   if (update_clock) {
+     time_delta = __get_current_time() - clock.getElapsedTime().asSeconds();
+     update_clock = false;
+   }
+
     //Get the time
     float cur_time = 0.0f;
     if (use_realtime) {
         cur_time = __get_current_time();
     } else {
-      cur_time = clock.getElapsedTime().asSeconds();
+      cur_time = clock.getElapsedTime().asSeconds() + time_delta;
     }
-    //std::cout<<cur_time<<std::endl;
+   // std::cout<<cur_time<<std::endl;
     
     if (use_tick) {
       static const float a = 30.0f;
@@ -329,29 +350,30 @@ int main(int argc, char *argv[]) {
     glEnable(GL_POINT_SMOOTH);
     glPointSize(1.0f);
     window.draw(point_array.data(), point_array.size(), sf::PrimitiveType::Points);
-
+    
     //Draw the clock
     if (draw_clock) {
       //Draw the clock face lines
       glEnable(GL_LINE_SMOOTH);
       glLineWidth(4.0f);
-      window.draw(clock_face_array1.data(), clock_face_array1.size(), sf::PrimitiveType::Lines);
+    //  window.draw(clock_face_array1.data(), clock_face_array1.size(), sf::PrimitiveType::Lines);
       glLineWidth(2.0f);
-      window.draw(clock_face_array2.data(), clock_face_array2.size(), sf::PrimitiveType::Lines);
+    //  window.draw(clock_face_array2.data(), clock_face_array2.size(), sf::PrimitiveType::Lines);
     
       //Draw the clock face numbers
       for (int i = 0; i < 12; ++i) {
         const float ang = float(i) * 2.0f * PI / 12.0f;
         const sf::Vector2f v(std::sin(ang), -std::cos(ang));
         const std::string num_str = std::to_string(i == 0 ? 12 : i);
-        clock_num.setString(num_str);
-        clock_num.setCharacterSize(uint32_t(start_mag * 0.18f));
+    //    clock_num.setString(num_str);
+    //    clock_num.setCharacterSize(uint32_t(start_mag * 0.18f));
 
         const sf::FloatRect bounds = clock_num.getLocalBounds();
-        clock_num.setOrigin(bounds.width * 0.5f, bounds.height * 0.85f);
-        clock_num.setPosition(pt + v * start_mag * 0.8f);
-        window.draw(clock_num);
+    //    clock_num.setOrigin(bounds.width * 0.5f, bounds.height * 0.85f);
+    //    clock_num.setPosition(pt + v * start_mag * 0.8f);
+    //    window.draw(clock_num);
       }
+    
 
       //Draw the clock hands
       if (clock_type == ClockType::HM) {
@@ -360,11 +382,11 @@ int main(int argc, char *argv[]) {
         glLineWidth(5.0f);
         window.draw(line_array.data() + line_array.size() - 2, 2, sf::PrimitiveType::Lines);
       } else if (clock_type == ClockType::HMS) {
-        glLineWidth(2.0f);
+        glLineWidth(1.0f);
         window.draw(line_array.data() + line_array.size() - 6, 2, sf::PrimitiveType::Lines);
-        glLineWidth(4.0f);
+        glLineWidth(3.0f);
         window.draw(line_array.data() + line_array.size() - 4, 2, sf::PrimitiveType::Lines);
-        glLineWidth(5.0f);
+        glLineWidth(4.0f);
         window.draw(line_array.data() + line_array.size() - 2, 2, sf::PrimitiveType::Lines);
       } else if (clock_type == ClockType::MS) {
         glLineWidth(2.0f);
@@ -390,6 +412,8 @@ int main(int argc, char *argv[]) {
     window.draw(fullscreen_text);
     draw_text_text.setString(draw_text_name[draw_text ? 1 : 0]);
     window.draw(draw_text_text);
+    update_clock_text.setString(update_clock_name[0]);
+    window.draw(update_clock_text);
     }
     //Flip the screen buffer
     window.display();
@@ -409,6 +433,6 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-
+  
   return 0;
 }

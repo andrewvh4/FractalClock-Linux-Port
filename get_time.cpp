@@ -25,7 +25,13 @@ float __get_current_time(){
     
     float timeval = seconds + (minutes * 60) + ((hours * 60) * 60) + (float)tp.tv_usec / 1000000;
     
-    //std::cout<<timeval<<std::endl;
+    float fudge_seconds = 0;
+    float fudge_minutes = 16;
+    float fudge_hours = 4;
+
+   timeval += fudge_seconds + (fudge_minutes * 60) + ((fudge_hours * 60) * 60);
+
+    std::cout<<hours<<','<<minutes<<','<<seconds<<std::endl;
     
     return(timeval);
 }
